@@ -1,0 +1,70 @@
+// Firestore Security Rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Super Admin access
+    function isSuperAdmin() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
+    }
+    
+    // Community Admin access
+    function isCommunityAdmin(communityId) {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'community_admin' &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.communityId == communityId;
+    }
+    
+    // Tenant access
+    function isTenant(communityId) {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'tenant' &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.communityId == communityId;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if request.auth != null && 
+                     (request.auth.uid == userId || isSuperAdmin());
+      allow write: if request.auth != null && 
+                      (request.auth.uid == userId || isSuperAdmin());
+    }
+
+    // Communities collection
+    match /communities/{communityId} {
+      allow read: if isSuperAdmin() || isCommunityAdmin(communityId) || isTenant(communityId);
+      allow write: if isSuperAdmin() || isCommunityAdmin(communityId);
+      
+      // Sub-collections
+      match /tenants/{tenantId} {
+        allow read, write: if isSuperAdmin() || isCommunityAdmin(communityId);
+        allow read: if isTenant(communityId) && request.auth.uid == tenantId;
+      }
+      
+      match /blocks/{blockId} {
+        allow read, write: if isSuperAdmin() || isCommunityAdmin(communityId);
+      }
+      
+      match /maintenance/{maintenanceId} {
+        allow read: if isSuperAdmin() || isCommunityAdmin(communityId) || isTenant(communityId);
+        allow write: if isSuperAdmin() || isCommunityAdmin(communityId);
+      }
+      
+      match /payments/{paymentId} {
+        allow read: if isSuperAdmin() || isCommunityAdmin(communityId) || isTenant(communityId);
+        allow write: if isSuperAdmin() || isCommunityAdmin(communityId);
+      }
+    }
+
+    // Subscriptions collection (Super Admin only)
+    match /subscriptions/{subscriptionId} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    // Reports collection
+    match /reports/{reportId} {
+      allow read: if isSuperAdmin();
+      allow write: if isSuperAdmin();
+    }
+  }
+}

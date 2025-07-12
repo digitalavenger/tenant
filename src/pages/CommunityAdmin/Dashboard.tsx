@@ -1,0 +1,171 @@
+import React from 'react';
+import { Users, DollarSign, CheckCircle, AlertCircle } from 'lucide-react';
+import StatCard from '../../components/Dashboard/StatCard';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+
+const paymentStatusData = [
+  { name: 'Paid', value: 75, color: '#309b47' },
+  { name: 'Pending', value: 20, color: '#f59e0b' },
+  { name: 'Overdue', value: 5, color: '#ef4444' },
+];
+
+const monthlyCollectionData = [
+  { month: 'Jan', collected: 85000, target: 90000 },
+  { month: 'Feb', collected: 88000, target: 90000 },
+  { month: 'Mar', collected: 92000, target: 90000 },
+  { month: 'Apr', collected: 87000, target: 90000 },
+  { month: 'May', collected: 95000, target: 90000 },
+  { month: 'Jun', collected: 91000, target: 90000 },
+];
+
+export default function CommunityAdminDashboard() {
+  return (
+    <div className="p-6 ml-64">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Community Dashboard</h1>
+        <p className="text-gray-600">Green Valley Apartments - Monthly Overview</p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatCard
+          title="Total Tenants"
+          value="125"
+          icon={Users}
+          change="+3 new this month"
+          changeType="positive"
+        />
+        <StatCard
+          title="Monthly Maintenance"
+          value="₹3,75,000"
+          icon={DollarSign}
+          change="Target: ₹3,90,000"
+          changeType="neutral"
+        />
+        <StatCard
+          title="Collected This Month"
+          value="₹3,54,750"
+          icon={CheckCircle}
+          change="94.6% collection rate"
+          changeType="positive"
+        />
+        <StatCard
+          title="Pending Amount"
+          value="₹20,250"
+          icon={AlertCircle}
+          change="5 tenants pending"
+          changeType="negative"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Payment Status Chart */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Status Distribution</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={paymentStatusData}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={100}
+                dataKey="value"
+              >
+                {paymentStatusData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="flex justify-center space-x-4 mt-4">
+            {paymentStatusData.map((entry, index) => (
+              <div key={index} className="flex items-center">
+                <div className={`w-3 h-3 rounded-full mr-2`} style={{ backgroundColor: entry.color }}></div>
+                <span className="text-sm text-gray-600">{entry.name} ({entry.value}%)</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Monthly Collection Chart */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Collection vs Target</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={monthlyCollectionData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip formatter={(value) => [`₹${value.toLocaleString()}`, '']} />
+              <Bar dataKey="collected" fill="#309b47" />
+              <Bar dataKey="target" fill="#0e2625" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Recent Transactions */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="p-6 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Recent Payments</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tenant
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Flat No
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {[
+                { tenant: 'Rajesh Kumar', flat: 'A-101', amount: 3000, status: 'paid', date: '2024-01-15' },
+                { tenant: 'Priya Sharma', flat: 'B-205', amount: 3500, status: 'paid', date: '2024-01-14' },
+                { tenant: 'Amit Patel', flat: 'C-302', amount: 2800, status: 'pending', date: '2024-01-13' },
+                { tenant: 'Sunita Reddy', flat: 'A-405', amount: 3200, status: 'paid', date: '2024-01-12' },
+              ].map((payment, index) => (
+                <tr key={index}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{payment.tenant}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{payment.flat}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">₹{payment.amount.toLocaleString()}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      payment.status === 'paid' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {payment.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{payment.date}</div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
