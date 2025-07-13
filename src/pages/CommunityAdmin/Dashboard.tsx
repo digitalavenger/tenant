@@ -1,59 +1,142 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, DollarSign, CheckCircle, AlertCircle } from 'lucide-react';
 import StatCard from '../../components/Dashboard/StatCard';
+import { dashboardService, paymentService, tenantService } from '../../services/firebase';
+import { useAuth } from '../../contexts/AuthContext';
+import { Payment, Tenant } from '../../types';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 
-const paymentStatusData = [
-  { name: 'Paid', value: 75, color: '#309b47' },
-  { name: 'Pending', value: 20, color: '#f59e0b' },
-  { name: 'Overdue', value: 5, color: '#ef4444' },
-];
+interface DashboardStats {
+  totalTenants: number;
+  totalMonthlyMaintenance: number;
+  totalPaid: number;
+  totalDue: number;
+  collectionRate: number;
+}
 
-const monthlyCollectionData = [
-  { month: 'Jan', collected: 85000, target: 90000 },
-  { month: 'Feb', collected: 88000, target: 90000 },
-  { month: 'Mar', collected: 92000, target: 90000 },
-  { month: 'Apr', collected: 87000, target: 90000 },
-  { month: 'May', collected: 95000, target: 90000 },
-  { month: 'Jun', collected: 91000, target: 90000 },
-];
+interface RecentPayment extends Payment {
+  tenantName?: string;
+  flatNumber?: string;
+}
 
 export default function CommunityAdminDashboard() {
+  const { userProfile } = useAuth();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalTenants: 0,
+    totalMonthlyMaintenance: 0,
+    totalPaid: 0,
+    totalDue: 0,
+    collectionRate: 0,
+  });
+  const [recentPayments, setRecentPayments] = useState<RecentPayment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (userProfile?.communityId) {
+      fetchDashboardData();
+    }
+  }, [userProfile]);
+
+  const fetchDashboardData = async () => {
+    if (!userProfile?.communityId) return;
+
+    try {
+      setLoading(true);
+
+      // Fetch dashboard stats
+      const dashboardStats = await dashboardService.getCommunityAdminStats(userProfile.communityId);
+      setStats(dashboardStats);
+
+      // Fetch recent payments with tenant details
+      const payments = await paymentService.getPayments(userProfile.communityId, 5);
+      const tenants = await tenantService.getTenants(userProfile.communityId);
+      
+      const paymentsWithTenants = payments.map(payment => {
+        const tenant = tenants.find(t => t.id === payment.tenantId);
+        return {
+          ...payment,
+          tenantName: tenant?.name || 'Unknown',
+          flatNumber: tenant?.flatNumber || 'N/A',
+        };
+      });
+
+      setRecentPayments(paymentsWithTenants);
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const paymentStatusData = [
+    { 
+      name: 'Paid', 
+      value: Math.round((stats.totalPaid / (stats.totalPaid + stats.totalDue)) * 100) || 0, 
+      color: '#309b47' 
+    },
+    { 
+      name: 'Pending', 
+      value: Math.round((stats.totalDue / (stats.totalPaid + stats.totalDue)) * 100) || 0, 
+      color: '#f59e0b' 
+    },
+  ];
+
+  // Mock monthly collection data - in real app, this would come from historical data
+  const monthlyCollectionData = [
+    { month: 'Jan', collected: 85000, target: 90000 },
+    { month: 'Feb', collected: 88000, target: 90000 },
+    { month: 'Mar', collected: 92000, target: 90000 },
+    { month: 'Apr', collected: 87000, target: 90000 },
+    { month: 'May', collected: 95000, target: 90000 },
+    { month: 'Jun', collected: stats.totalPaid, target: stats.totalMonthlyMaintenance },
+  ];
+
+  if (loading) {
+    return (
+      <div className="p-6 ml-64">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 ml-64">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Community Dashboard</h1>
-        <p className="text-gray-600">Green Valley Apartments - Monthly Overview</p>
+        <p className="text-gray-600">Monthly Overview - {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
           title="Total Tenants"
-          value="125"
+          value={stats.totalTenants.toString()}
           icon={Users}
           change="+3 new this month"
           changeType="positive"
         />
         <StatCard
           title="Monthly Maintenance"
-          value="₹3,75,000"
+          value={`₹${stats.totalMonthlyMaintenance.toLocaleString()}`}
           icon={DollarSign}
-          change="Target: ₹3,90,000"
+          change={`Target: ₹${stats.totalMonthlyMaintenance.toLocaleString()}`}
           changeType="neutral"
         />
         <StatCard
           title="Collected This Month"
-          value="₹3,54,750"
+          value={`₹${stats.totalPaid.toLocaleString()}`}
           icon={CheckCircle}
-          change="94.6% collection rate"
+          change={`${stats.collectionRate.toFixed(1)}% collection rate`}
           changeType="positive"
         />
         <StatCard
           title="Pending Amount"
-          value="₹20,250"
+          value={`₹${stats.totalDue.toLocaleString()}`}
           icon={AlertCircle}
-          change="5 tenants pending"
+          change={`${Math.round(stats.totalDue / (stats.totalMonthlyMaintenance / stats.totalTenants || 1))} tenants pending`}
           changeType="negative"
         />
       </div>
@@ -132,36 +215,43 @@ export default function CommunityAdminDashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {[
-                { tenant: 'Rajesh Kumar', flat: 'A-101', amount: 3000, status: 'paid', date: '2024-01-15' },
-                { tenant: 'Priya Sharma', flat: 'B-205', amount: 3500, status: 'paid', date: '2024-01-14' },
-                { tenant: 'Amit Patel', flat: 'C-302', amount: 2800, status: 'pending', date: '2024-01-13' },
-                { tenant: 'Sunita Reddy', flat: 'A-405', amount: 3200, status: 'paid', date: '2024-01-12' },
-              ].map((payment, index) => (
-                <tr key={index}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{payment.tenant}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{payment.flat}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">₹{payment.amount.toLocaleString()}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      payment.status === 'paid' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {payment.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{payment.date}</div>
+              {recentPayments.length > 0 ? (
+                recentPayments.map((payment, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{payment.tenantName}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{payment.flatNumber}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">₹{payment.amount.toLocaleString()}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        payment.status === 'success' 
+                          ? 'bg-green-100 text-green-800' 
+                          : payment.status === 'pending'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {payment.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {payment.createdAt.toLocaleDateString()}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                    No recent payments found
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

@@ -1,14 +1,29 @@
+// src/types/index.ts
+
+// Import Timestamp from 'firebase/firestore' for Firebase v9+
+import { Timestamp } from 'firebase/firestore'; 
+
 export interface User {
-  id: string;
+  id: string; // Corresponds to Firebase Auth UID
   email: string;
   name: string;
   phone: string;
-  role: 'super_admin' | 'community_admin' | 'tenant';
-  communityId?: string;
+  // ⭐ CRITICAL: These roles MUST EXACTLY MATCH the strings in your Firestore documents.
+  //   e.g., if Firestore has "super_admin", this must be 'super_admin', not 'SuperAdmin'.
+  role: 'super_admin' | 'community_admin' | 'tenant'; 
+  communityId?: string; // Optional: A user might not belong to a community immediately
   isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  // ⭐ IMPORTANT: Use Timestamp type here as Firestore stores dates as Timestamps.
+  //    We will convert them to JavaScript Date objects when reading.
+  createdAt: Timestamp; 
+  updatedAt: Timestamp;
+  // If you have a lastLogin field in Firestore, it should also be Timestamp
+  lastLogin?: Timestamp; 
 }
+
+// Other interfaces remain as you provided, but consider if they also use 'Date'
+// where 'Timestamp' should be used for fields coming directly from Firestore.
+// For example, if Community has createdAt/updatedAt, they should also be Timestamp.
 
 export interface Community {
   id: string;
@@ -23,8 +38,8 @@ export interface Community {
   totalTenants: number;
   totalBlocks: number;
   settings: CommunitySettings;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Timestamp; // Changed to Timestamp
+  updatedAt: Timestamp; // Changed to Timestamp
 }
 
 export interface CommunitySettings {
@@ -53,7 +68,7 @@ export interface Subscription {
   features: string[];
   maxTenants: number;
   isActive: boolean;
-  createdAt: Date;
+  createdAt: Timestamp; // Changed to Timestamp
 }
 
 export interface Block {
@@ -61,7 +76,7 @@ export interface Block {
   communityId: string;
   name: string;
   totalFlats: number;
-  createdAt: Date;
+  createdAt: Timestamp; // Changed to Timestamp
 }
 
 export interface Flat {
@@ -70,7 +85,7 @@ export interface Flat {
   blockId: string;
   flatNumber: string;
   tenantId?: string;
-  createdAt: Date;
+  createdAt: Timestamp; // Changed to Timestamp
 }
 
 export interface Tenant {
@@ -84,7 +99,7 @@ export interface Tenant {
   flatNumber: string;
   monthlyMaintenance: number;
   isActive: boolean;
-  createdAt: Date;
+  createdAt: Timestamp; // Changed to Timestamp
 }
 
 export interface MaintenanceRecord {
@@ -98,10 +113,10 @@ export interface MaintenanceRecord {
   handlingCharges: number;
   totalAmount: number;
   status: 'pending' | 'paid' | 'overdue';
-  dueDate: Date;
-  paidDate?: Date;
+  dueDate: Timestamp; // Changed to Timestamp
+  paidDate?: Timestamp; // Changed to Timestamp
   paymentId?: string;
-  createdAt: Date;
+  createdAt: Timestamp; // Changed to Timestamp
 }
 
 export interface Payment {
@@ -113,7 +128,7 @@ export interface Payment {
   razorpayPaymentId: string;
   status: 'success' | 'failed' | 'pending';
   method: string;
-  createdAt: Date;
+  createdAt: Timestamp; // Changed to Timestamp
 }
 
 export interface DashboardStats {
@@ -122,4 +137,65 @@ export interface DashboardStats {
   totalPaid: number;
   totalDue: number;
   collectionRate: number;
+}
+
+export interface WhatsAppTemplate {
+  id: string;
+  name: string;
+  language: string;
+  status: 'APPROVED' | 'PENDING' | 'REJECTED';
+  category: string;
+  components: WhatsAppTemplateComponent[];
+}
+
+export interface WhatsAppTemplateComponent {
+  type: 'HEADER' | 'BODY' | 'FOOTER' | 'BUTTONS';
+  format?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
+  text?: string;
+  buttons?: WhatsAppButton[];
+  example?: {
+    header_text?: string[];
+    body_text?: string[][];
+  };
+}
+
+export interface WhatsAppButton {
+  type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER';
+  text: string;
+  url?: string;
+  phone_number?: string;
+}
+
+export interface WhatsAppConfig {
+  wabaNumber: string;
+  apiKey: string;
+  baseUrl: string;
+}
+
+export interface WhatsAppMessage {
+  to: string;
+  type: 'text' | 'template' | 'image' | 'document';
+  text?: {
+    body: string;
+  };
+  template?: {
+    name: string;
+    language: {
+      code: string;
+      policy: 'deterministic';
+    };
+    components?: WhatsAppTemplateParameter[];
+  };
+}
+
+export interface WhatsAppTemplateParameter {
+  type: 'header' | 'body' | 'button';
+  sub_type?: 'url';
+  index?: string;
+  parameters: {
+    type: 'text' | 'image' | 'document';
+    text?: string;
+    image?: { link: string };
+    document?: { link: string; filename: string };
+  }[];
 }
