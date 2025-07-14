@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Users, DollarSign, TrendingUp, Plus, Search, Filter } from 'lucide-react';
+import { Building2, Users, DollarSign, TrendingUp, Plus, Search } from 'lucide-react';
 import StatCard from '../../components/Dashboard/StatCard';
 import { communityService, dashboardService, userService } from '../../services/firebase';
 import { Community } from '../../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import RazorpayConfig from './RazorpayConfig';
 
 interface DashboardStats {
   totalCommunities: number;
@@ -38,26 +39,22 @@ export default function SuperAdminDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-
-      // Fetch dashboard stats
       const dashboardStats = await dashboardService.getSuperAdminStats();
       setStats(dashboardStats);
 
-      // Fetch communities with admin details
       const communitiesData = await communityService.getCommunities();
       const users = await userService.getUsers();
-      
+
       const communitiesWithAdmins = communitiesData.map(community => {
         const admin = users.find(user => user.id === community.adminId);
         return {
           ...community,
           adminName: admin?.name || 'N/A',
-          subscriptionName: 'Basic Plan', // This would come from subscription service
+          subscriptionName: 'Basic Plan',
         };
       });
 
       setCommunities(communitiesWithAdmins);
-
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -68,7 +65,7 @@ export default function SuperAdminDashboard() {
   const toggleCommunityStatus = async (communityId: string) => {
     try {
       await communityService.toggleCommunityStatus(communityId);
-      fetchDashboardData(); // Refresh data
+      fetchDashboardData();
     } catch (error) {
       console.error('Error updating community status:', error);
     }
@@ -76,16 +73,15 @@ export default function SuperAdminDashboard() {
 
   const filteredCommunities = communities.filter(community => {
     const matchesSearch = community.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         community.adminName?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = filterStatus === 'all' || 
-                         (filterStatus === 'active' && community.isActive) ||
-                         (filterStatus === 'inactive' && !community.isActive);
+      community.adminName?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesFilter = filterStatus === 'all' ||
+      (filterStatus === 'active' && community.isActive) ||
+      (filterStatus === 'inactive' && !community.isActive);
 
     return matchesSearch && matchesFilter;
   });
 
-  // Mock chart data - in real app, this would come from analytics
   const monthlyData = [
     { month: 'Jan', communities: 12, revenue: 45000 },
     { month: 'Feb', communities: 18, revenue: 52000 },
@@ -112,40 +108,14 @@ export default function SuperAdminDashboard() {
         <p className="text-gray-600">Overview of all communities and platform performance</p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          title="Total Communities"
-          value={stats.totalCommunities.toString()}
-          icon={Building2}
-          change={`${stats.activeCommunities} active`}
-          changeType="positive"
-        />
-        <StatCard
-          title="Active Tenants"
-          value={stats.totalTenants.toLocaleString()}
-          icon={Users}
-          change="+8% from last month"
-          changeType="positive"
-        />
-        <StatCard
-          title="Monthly Revenue"
-          value={`₹${stats.monthlyRevenue.toLocaleString()}`}
-          icon={DollarSign}
-          change="+15% from last month"
-          changeType="positive"
-        />
-        <StatCard
-          title="Collection Rate"
-          value={`${stats.collectionRate}%`}
-          icon={TrendingUp}
-          change="+2% from last month"
-          changeType="positive"
-        />
+        <StatCard title="Total Communities" value={stats.totalCommunities.toString()} icon={Building2} change={`${stats.activeCommunities} active`} changeType="positive" />
+        <StatCard title="Active Tenants" value={stats.totalTenants.toLocaleString()} icon={Users} change="+8% from last month" changeType="positive" />
+        <StatCard title="Monthly Revenue" value={`₹${stats.monthlyRevenue.toLocaleString()}`} icon={DollarSign} change="+15% from last month" changeType="positive" />
+        <StatCard title="Collection Rate" value={`${stats.collectionRate}%`} icon={TrendingUp} change="+2% from last month" changeType="positive" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Revenue Chart */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Revenue</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -159,7 +129,6 @@ export default function SuperAdminDashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Community Growth */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Community Growth</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -174,18 +143,17 @@ export default function SuperAdminDashboard() {
         </div>
       </div>
 
-      {/* Communities Management */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <RazorpayConfig />
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mt-8">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Communities Management</h3>
             <button className="bg-secondary text-white px-4 py-2 rounded-md hover:bg-secondary/90 flex items-center">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Community
+              <Plus className="h-4 w-4 mr-2" /> Add Community
             </button>
           </div>
-          
-          {/* Search and Filter */}
+
           <div className="mt-4 flex space-x-4">
             <div className="flex-1 relative">
               <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
@@ -208,29 +176,17 @@ export default function SuperAdminDashboard() {
             </select>
           </div>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Community Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Admin
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tenants
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Subscription
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Community Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tenants</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscription</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -238,9 +194,7 @@ export default function SuperAdminDashboard() {
                 <tr key={community.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{community.name}</div>
-                    <div className="text-sm text-gray-500">
-                      Created: {community.createdAt.toLocaleDateString()}
-                    </div>
+                    <div className="text-sm text-gray-500">Created: {community.createdAt.toLocaleDateString()}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{community.adminName}</div>
@@ -252,22 +206,14 @@ export default function SuperAdminDashboard() {
                     <div className="text-sm text-gray-900">{community.subscriptionName}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      community.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${community.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                       {community.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    <button 
+                    <button
                       onClick={() => toggleCommunityStatus(community.id)}
-                      className={`px-3 py-1 rounded text-xs font-medium ${
-                        community.isActive 
-                          ? 'bg-red-100 text-red-800 hover:bg-red-200' 
-                          : 'bg-green-100 text-green-800 hover:bg-green-200'
-                      }`}
+                      className={`px-3 py-1 rounded text-xs font-medium ${community.isActive ? 'bg-red-100 text-red-800 hover:bg-red-200' : 'bg-green-100 text-green-800 hover:bg-green-200'}`}
                     >
                       {community.isActive ? 'Disable' : 'Enable'}
                     </button>
