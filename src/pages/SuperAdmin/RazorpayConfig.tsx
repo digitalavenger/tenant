@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { razorpayService } from '../../services/firebase';
+import { razorpayService } from "../../services/razorpayService";
 
 export default function RazorpayConfig() {
   const [keyId, setKeyId] = useState('');

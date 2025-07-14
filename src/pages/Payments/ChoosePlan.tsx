@@ -93,7 +93,7 @@ export default function ChoosePlan() {
     }
 
     const options = {
-      key: 'YOUR_RAZORPAY_KEY_ID', // Replace with your actual Razorpay Key ID
+      key: keyIdFromFirebase,
       amount: subscription.price * 100,
       currency: "INR",
       name: "SocietyPay Subscription",
