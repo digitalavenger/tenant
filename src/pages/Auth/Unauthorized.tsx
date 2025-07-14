@@ -4,11 +4,11 @@ import { AlertTriangle, Home, LogOut } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function Unauthorized() {
-  const { logout, userProfile } = useAuth();
+  const { signOut, userProfile } = useAuth();
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await signOut();
     } catch (error) {
       console.error('Error logging out:', error);
     }

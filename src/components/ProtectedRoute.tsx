@@ -1,3 +1,5 @@
+// src/routes/ProtectedRoute.tsx
+
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,21 +10,21 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { currentUser, userProfile, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-blue-500"></div>
       </div>
     );
   }
 
-  if (!currentUser) {
+  if (!user || !userProfile) {
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole && userProfile?.role !== requiredRole) {
+  if (requiredRole && userProfile.role !== requiredRole) {
     return <Navigate to="/unauthorized" replace />;
   }
 

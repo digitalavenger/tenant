@@ -1,9 +1,12 @@
+// src/components/Layout/Header.tsx (Corrected)
+
 import React from 'react';
 import { Bell, Search, LogOut } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function Header() {
-  const { logout, userProfile } = useAuth();
+  // ⭐ FIX: Changed 'logout' to 'signOut' to match the context
+  const { signOut, userProfile } = useAuth();
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4 ml-64">
@@ -32,7 +35,8 @@ export default function Header() {
             </div>
             
             <button
-              onClick={logout}
+              // ⭐ FIX: Call the correct function name
+              onClick={signOut}
               className="p-2 text-gray-400 hover:text-gray-600"
               title="Logout"
             >
